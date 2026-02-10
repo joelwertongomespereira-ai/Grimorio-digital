@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grimório Digital</title>
+
+<style>
+body {
+  font-family: Arial;
+  background-color: #1e1e1e;
+  color: white;
+  padding: 10px;
+}
+
+h1, h2 {
+  text-align: center;
+}
+
+input, select, textarea {
+  width: 100%;
+  margin: 5px 0;
+  padding: 5px;
+}
+
+button {
+  padding: 6px;
+  margin: 4px 0;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.prepare { background: #4CAF50; }
+.remove { background: #f44336; }
+.card {
+  background: #2c2c2c;
+  padding: 10px;
+  margin: 8px 0;
+  border-radius: 8px;
+}
+.badge {
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #444;
+  margin-right: 5px;
+}
+.limit-warning {
+  color: orange;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📖 Grimório Digital</h1>
+
+<h3>Limite de Magias Preparadas</h3>
+<input type="number" id="spellLimit" placeholder="Ex: 4">
+<button onclick="setLimit()">Definir Limite</button>
+<p id="counter"></p>
+
+<hr>
+
+<h2>Nova Magia</h2>
+<input type="text" id="name" placeholder="Nome">
+<input type="number" id="circle" placeholder="Círculo">
+<input type="text" id="school" placeholder="Escola">
+<input type="text" id="damage" placeholder="Dano (ex: 8d6 fogo)">
+<input type="text" id="save" placeholder="Teste de Resistência">
+<textarea id="description" placeholder="Descrição"></textarea>
+<button onclick="addSpell()">Adicionar Magia</button>
+
+<hr>
+
+<h2>Magias Conhecidas</h2>
+<div id="knownList"></div>
+
+<h2>Magias Preparadas</h2>
+<div id="preparedList"></div>
+
+<script>
+let knownSpells = JSON.parse(localStorage.getItem("knownSpells")) || [];
+let preparedSpells = JSON.parse(localStorage.getItem("preparedSpells")) || [];
+let spellLimit = JSON.parse(localStorage.getItem("spellLimit")) || 0;
+
+function saveData() {
+  localStorage.setItem("knownSpells", JSON.stringify(knownSpells));
+  localStorage.setItem("preparedSpells", JSON.stringify(preparedSpells));
+  localStorage.setItem("spellLimit", JSON.stringify(spellLimit));
+}
+
+function setLimit() {
+  spellLimit = parseInt(document.getElementById("spellLimit").value);
+  saveData();
+  render();
+}
+
+function addSpell() {
+  let spell = {
+    name: name.value,
+    circle: circle.value,
+    school: school.value,
+    damage: damage.value,
+    save: save.value,
+    description: description.value
+  };
+
+  knownSpells.push(spell);
+  saveData();
+  render();
+
+  document.querySelectorAll("input, textarea").forEach(el => el.value = "");
+}
+
+function prepareSpell(index) {
+  if (spellLimit && preparedSpells.length >= spellLimit) {
+    alert("Limite de magias preparadas atingido!");
+    return;
+  }
+  preparedSpells.push(knownSpells[index]);
+  knownSpells.splice(index, 1);
+  saveData();
+  render();
+}
+
+function removeSpell(index) {
+  knownSpells.push(preparedSpells[index]);
+  preparedSpells.splice(index, 1);
+  saveData();
+  render();
+}
+
+function render() {
+  let knownDiv = document.getElementById("knownList");
+  let preparedDiv = document.getElementById("preparedList");
+  let counter = document.getElementById("counter");
+
+  knownDiv.innerHTML = "";
+  preparedDiv.innerHTML = "";
+
+  counter.innerHTML = `Preparadas: ${preparedSpells.length} / ${spellLimit || "∞"}`;
+
+  knownSpells.forEach((spell, index) => {
+    knownDiv.innerHTML += createCard(spell, index, false);
+  });
+
+  preparedSpells.forEach((spell, index) => {
+    preparedDiv.innerHTML += createCard(spell, index, true);
+  });
+}
+
+function createCard(spell, index, isPrepared) {
+  return `
+  <div class="card">
+    <strong>${spell.name}</strong><br>
+    <span class="badge">Círculo ${spell.circle}</span>
+    <span class="badge">${spell.school}</span><br>
+    <span class="badge">${spell.damage || "Sem dano"}</span>
+    <span class="badge">${spell.save || "Sem teste"}</span>
+    <p>${spell.description}</p>
+    <button class="${isPrepared ? "remove" : "prepare"}"
+      onclick="${isPrepared ? "removeSpell" : "prepareSpell"}(${index})">
+      ${isPrepared ? "Remover" : "Preparar"}
+    </button>
+  </div>`;
+}
+
+render();
+</script>
+
+</body>
+</html>
